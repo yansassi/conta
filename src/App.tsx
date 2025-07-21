@@ -27,7 +27,6 @@ function App() {
   const [editingDebt, setEditingDebt] = useState<Debt | undefined>();
   const [editingFixedBill, setEditingFixedBill] = useState<FixedBill | undefined>();
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'debts' | 'fixedBills'>('dashboard');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'debts' | 'fixedBills' | 'incomes'>('dashboard');
 
   // Calcular resumo das dívidas
