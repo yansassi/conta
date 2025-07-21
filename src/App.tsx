@@ -83,6 +83,8 @@ function App() {
   const incomesWithStatus = useMemo(() => {
     return incomes.map(income => ({
       ...income,
+      expectedDate: income.expectedDate ? new Date(income.expectedDate) : new Date(),
+      receivedDate: income.receivedDate ? new Date(income.receivedDate) : undefined,
       status: calculateIncomeStatus(income),
     }));
   }, [incomes]);
@@ -119,7 +121,7 @@ function App() {
     return debts.map(debt => ({
       ...debt,
       status: calculateDebtStatus(debt),
-      dueDate: new Date(debt.dueDate), // Garantir que é um objeto Date
+      dueDate: debt.dueDate ? new Date(debt.dueDate) : new Date(),
     }));
   }, [debts]);
 
@@ -127,6 +129,8 @@ function App() {
   const fixedBillsWithStatus = useMemo(() => {
     return fixedBills.map(bill => ({
       ...bill,
+      dueDate: bill.dueDate ? new Date(bill.dueDate) : new Date(),
+      lastPaidDate: bill.lastPaidDate ? new Date(bill.lastPaidDate) : undefined,
       status: calculateFixedBillStatus(bill),
     }));
   }, [fixedBills]);
