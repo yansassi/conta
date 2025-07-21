@@ -153,33 +153,3 @@ export const FixedBillList: React.FC<FixedBillListProps> = ({
     </div>
   );
 };
-                </div>
-                
-                {bill.description && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600">{bill.description}</p>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex space-x-2 ml-4">
-                <button
-                  onClick={() => onEdit(bill)}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <Edit className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => onDelete(bill.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
