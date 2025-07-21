@@ -25,93 +25,101 @@ export const DebtList: React.FC<DebtListProps> = ({ debts, onNegotiate, onDelete
   }
 
   return (
-    <div className="space-y-4">
+    <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Suas Dívidas</h2>
       
-      {debts.map((debt) => (
-        <div key={debt.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center mb-2">
-                <span className="text-2xl mr-3">{getCategoryIcon(debt.category)}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {debts.map((debt) => (
+          <div key={debt.id} className="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow relative">
+            {/* Header do Card */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
+                <span className="text-2xl mr-2">{getCategoryIcon(debt.category)}</span>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{debt.name}</h3>
-                  <p className="text-sm text-gray-600">{debt.creditor}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 truncate">{debt.name}</h3>
+                  <p className="text-xs text-gray-600 truncate">{debt.creditor}</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div>
-                  <p className="text-sm text-gray-600">Valor Restante</p>
-                  <p className="text-lg font-bold text-red-600">
-                    {formatCurrency(debt.remainingAmount)}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-gray-600">Parcela Mínima</p>
-                  <p className="text-lg font-semibold text-gray-900">
-                    {formatCurrency(debt.minimumPayment)}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-gray-600">Taxa de Juros</p>
-                  <p className="text-lg font-semibold text-gray-900 flex items-center">
-                    <Percent className="h-4 w-4 mr-1" />
-                    {debt.interestRate}% a.a.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    Vence em: {formatDate(debt.dueDate)}
-                  </div>
-                  
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(debt.status)}`}>
-                    {debt.status.replace('-', ' ')}
-                  </span>
-                </div>
-                
-                <div className="text-sm text-gray-600">
-                  {debt.installments.paid}/{debt.installments.total} parcelas pagas
-                </div>
-              </div>
-              
-              {/* Barra de progresso das parcelas */}
-              <div className="mt-3">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${(debt.installments.paid / debt.installments.total) * 100}%` 
-                    }}
-                  ></div>
-                </div>
+              {/* Botões de Ação */}
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => onNegotiate(debt)}
+                  className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                  title="Negociar"
+                >
+                  <Calculator className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(debt.id)}
+                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Excluir"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
-            
-            <div className="flex space-x-2 ml-4">
-              <button
-                onClick={() => onNegotiate(debt)}
-                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                title="Negociar condições"
-              >
-                <Calculator className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => onDelete(debt.id)}
-                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
+
+            {/* Valor Principal */}
+            <div className="text-center mb-3">
+              <p className="text-2xl font-bold text-red-600">
+                {formatCurrency(debt.remainingAmount)}
+              </p>
+              <p className="text-sm text-gray-600">Valor Restante</p>
+            </div>
+
+            {/* Informações Principais */}
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Parcela Mín:</span>
+                <span className="font-semibold">{formatCurrency(debt.minimumPayment)}</span>
+              </div>
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Juros:</span>
+                <span className="font-semibold flex items-center">
+                  <Percent className="h-3 w-3 mr-1" />
+                  {debt.interestRate}% a.a.
+                </span>
+              </div>
+              
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Parcelas:</span>
+                <span className="font-semibold">{debt.installments.paid}/{debt.installments.total}</span>
+              </div>
+            </div>
+
+            {/* Status e Data */}
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-center">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(debt.status)}`}>
+                  {debt.status.replace('-', ' ')}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-center text-xs text-gray-600">
+                <Calendar className="h-3 w-3 mr-1" />
+                {formatDate(debt.dueDate)}
+              </div>
+            </div>
+
+            {/* Barra de Progresso */}
+            <div className="mb-3">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${(debt.installments.paid / debt.installments.total) * 100}%` 
+                  }}
+                ></div>
+              </div>
+              <div className="text-xs text-gray-600 text-center mt-1">
+                {Math.round((debt.installments.paid / debt.installments.total) * 100)}% pago
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };

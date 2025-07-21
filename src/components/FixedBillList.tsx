@@ -148,7 +148,7 @@ export const FixedBillList: React.FC<FixedBillListProps> = ({
             )}
           </div>
         );
-      })}
+        })}
       </div>
     </div>
   );
