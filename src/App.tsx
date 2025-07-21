@@ -450,7 +450,11 @@ Deseja importar estes dados? Isso substituirá todos os dados atuais.
 
         {/* Conteúdo Principal */}
         {activeTab === 'dashboard' && (
-          <Dashboard debts={debtsWithStatus} summary={summary} />
+          <Dashboard 
+            summary={summary} 
+            fixedBillSummary={fixedBillSummary} 
+            incomeSummary={incomeSummary} 
+          />
         )}
 
         {activeTab === 'debts' && (
