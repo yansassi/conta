@@ -53,78 +53,106 @@ export const FixedBillList: React.FC<FixedBillListProps> = ({
   });
 
   return (
-    <div className="space-y-4">
+    <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Contas Fixas</h2>
       
-      {sortedBills.map((bill) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {sortedBills.map((bill) => {
         const status = calculateFixedBillStatus(bill);
         const daysUntilDue = getDaysUntilDue(bill.dueDay);
         const nextDueDate = getNextDueDate(bill.dueDay);
         
         return (
-          <div key={bill.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center mb-2">
-                  <span className="text-2xl mr-3">{getFixedBillCategoryIcon(bill.category)}</span>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">{bill.name}</h3>
-                    <p className="text-sm text-gray-600">{bill.provider}</p>
-                  </div>
+          <div key={bill.id} className="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow relative">
+            {/* Header do Card */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
+                <span className="text-2xl mr-2">{getFixedBillCategoryIcon(bill.category)}</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 truncate">{bill.name}</h3>
+                  <p className="text-xs text-gray-600 truncate">{bill.provider}</p>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Valor</p>
-                    <p className="text-lg font-bold text-gray-900">
-                      {formatCurrency(bill.amount)}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm text-gray-600">Categoria</p>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {getCategoryDisplayName(bill.category)}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm text-gray-600">Próximo Vencimento</p>
-                    <p className="text-lg font-semibold text-gray-900 flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {formatDate(nextDueDate)}
-                    </p>
-                  </div>
+              </div>
+              
+              {/* Botões de Ação */}
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => onEdit(bill)}
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Editar"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(bill.id)}
+                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Excluir"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Valor Principal */}
+            <div className="text-center mb-3">
+              <p className="text-2xl font-bold text-gray-900">
+                {formatCurrency(bill.amount)}
+              </p>
+              <p className="text-sm text-gray-600">
+                {getCategoryDisplayName(bill.category)}
+              </p>
+            </div>
+
+            {/* Status e Data */}
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-center">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getFixedBillStatusColor(status)}`}>
+                  {status === 'pago' ? 'Pago' : status === 'pendente' ? 'Pendente' : 'Em Atraso'}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-center text-xs text-gray-600">
+                <Calendar className="h-3 w-3 mr-1" />
+                {formatDate(nextDueDate)}
+              </div>
+              
+              {status !== 'pago' && (
+                <div className="flex items-center justify-center text-xs text-gray-600">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {daysUntilDue > 0 
+                    ? `${daysUntilDue} dias`
+                    : `${Math.abs(daysUntilDue)} dias atraso`
+                  }
                 </div>
-                
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center space-x-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getFixedBillStatusColor(status)}`}>
-                      {status === 'pago' ? 'Pago' : status === 'pendente' ? 'Pendente' : 'Em Atraso'}
-                    </span>
-                    
-                    {status !== 'pago' && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {daysUntilDue > 0 
-                          ? `${daysUntilDue} dias para vencer`
-                          : `${Math.abs(daysUntilDue)} dias em atraso`
-                        }
-                      </div>
-                    )}
-                  </div>
-                  
-                  <button
-                    onClick={() => onTogglePaid(bill.id)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                      bill.isPaid
-                        ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        : 'bg-green-100 text-green-600 hover:bg-green-200'
-                    }`}
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    <span>{bill.isPaid ? 'Marcar como Pendente' : 'Marcar como Pago'}</span>
-                  </button>
+              )}
+            </div>
+
+            {/* Botão de Toggle Pagamento */}
+            <button
+              onClick={() => onTogglePaid(bill.id)}
+              className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                bill.isPaid
+                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-green-100 text-green-600 hover:bg-green-200'
+              }`}
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>{bill.isPaid ? 'Marcar Pendente' : 'Marcar Pago'}</span>
+            </button>
+
+            {/* Descrição (se houver) */}
+            {bill.description && (
+              <div className="mt-3 p-2 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600 line-clamp-2">{bill.description}</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      </div>
+    </div>
+  );
+};
                 </div>
                 
                 {bill.description && (
