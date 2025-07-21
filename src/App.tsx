@@ -1,25 +1,34 @@
 import React, { useState, useMemo } from 'react';
 import { Debt, DebtSummary } from './types/debt';
 import { FixedBill, FixedBillSummary } from './types/fixedBill';
+import { Income, IncomeSummary } from './types/income';
 import { Dashboard } from './components/Dashboard';
 import { DebtList } from './components/DebtList';
 import { DebtForm } from './components/DebtForm';
 import { FixedBillDashboard } from './components/FixedBillDashboard';
 import { FixedBillList } from './components/FixedBillList';
 import { FixedBillForm } from './components/FixedBillForm';
+import { IncomeDashboard } from './components/IncomeDashboard';
+import { IncomeList } from './components/IncomeList';
+import { IncomeForm } from './components/IncomeForm';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { calculateDebtStatus } from './utils/debtCalculations';
 import { calculateFixedBillStatus } from './utils/fixedBillCalculations';
+import { calculateIncomeStatus } from './utils/incomeCalculations';
 import { Plus, Calculator } from 'lucide-react';
 
 function App() {
   const [debts, setDebts] = useLocalStorage<Debt[]>('debts', []);
   const [fixedBills, setFixedBills] = useLocalStorage<FixedBill[]>('fixedBills', []);
+  const [incomes, setIncomes] = useLocalStorage<Income[]>('incomes', []);
   const [showForm, setShowForm] = useState(false);
   const [showFixedBillForm, setShowFixedBillForm] = useState(false);
+  const [showIncomeForm, setShowIncomeForm] = useState(false);
   const [editingDebt, setEditingDebt] = useState<Debt | undefined>();
   const [editingFixedBill, setEditingFixedBill] = useState<FixedBill | undefined>();
+  const [editingIncome, setEditingIncome] = useState<Income | undefined>();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'debts' | 'fixedBills'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'debts' | 'fixedBills' | 'incomes'>('dashboard');
 
   // Calcular resumo das dívidas
   const summary: DebtSummary = useMemo(() => {
@@ -66,6 +75,41 @@ function App() {
       overdueBills,
     };
   }, [fixedBills]);
+
+  // Atualizar status dos recebimentos
+  const incomesWithStatus = useMemo(() => {
+    return incomes.map(income => ({
+      ...income,
+      status: calculateIncomeStatus(income),
+    }));
+  }, [incomes]);
+
+  // Calcular resumo dos recebimentos
+  const incomeSummary: IncomeSummary = useMemo(() => {
+    const totalMonthlyIncome = incomes
+      .filter(income => income.frequency === 'mensal' || income.frequency === 'unico')
+      .reduce((sum, income) => sum + income.amount, 0);
+    const receivedAmount = incomes
+      .filter(income => income.isReceived)
+      .reduce((sum, income) => sum + income.amount, 0);
+    const pendingAmount = incomes
+      .filter(income => !income.isReceived)
+      .reduce((sum, income) => sum + income.amount, 0);
+    const totalIncomes = incomes.length;
+    const receivedIncomes = incomes.filter(income => income.isReceived).length;
+    const overdueIncomes = incomes.filter(income => 
+      calculateIncomeStatus(income) === 'em-atraso'
+    ).length;
+
+    return {
+      totalMonthlyIncome,
+      receivedAmount,
+      pendingAmount,
+      totalIncomes,
+      receivedIncomes,
+      overdueIncomes,
+    };
+  }, [incomes]);
 
   // Atualizar status das dívidas
   const debtsWithStatus = useMemo(() => {
@@ -124,6 +168,26 @@ function App() {
     setEditingFixedBill(undefined);
   };
 
+  const handleSaveIncome = (incomeData: Omit<Income, 'id'>) => {
+    if (editingIncome) {
+      // Editando recebimento existente
+      setIncomes(prev => prev.map(income => 
+        income.id === editingIncome.id 
+          ? { ...incomeData, id: editingIncome.id }
+          : income
+      ));
+    } else {
+      // Adicionando novo recebimento
+      const newIncome: Income = {
+        ...incomeData,
+        id: Date.now().toString(),
+      };
+      setIncomes(prev => [...prev, newIncome]);
+    }
+    setShowIncomeForm(false);
+    setEditingIncome(undefined);
+  };
+
   const handleEditDebt = (debt: Debt) => {
     setEditingDebt(debt);
     setShowForm(true);
@@ -132,6 +196,11 @@ function App() {
   const handleEditFixedBill = (bill: FixedBill) => {
     setEditingFixedBill(bill);
     setShowFixedBillForm(true);
+  };
+
+  const handleEditIncome = (income: Income) => {
+    setEditingIncome(income);
+    setShowIncomeForm(true);
   };
 
   const handleDeleteDebt = (id: string) => {
@@ -143,6 +212,12 @@ function App() {
   const handleDeleteFixedBill = (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta conta?')) {
       setFixedBills(prev => prev.filter(bill => bill.id !== id));
+    }
+  };
+
+  const handleDeleteIncome = (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este recebimento?')) {
+      setIncomes(prev => prev.filter(income => income.id !== id));
     }
   };
 
@@ -158,6 +233,18 @@ function App() {
     ));
   };
 
+  const handleToggleIncomeReceived = (id: string) => {
+    setIncomes(prev => prev.map(income => 
+      income.id === id 
+        ? { 
+            ...income, 
+            isReceived: !income.isReceived,
+            receivedDate: !income.isReceived ? new Date() : income.receivedDate
+          }
+        : income
+    ));
+  };
+
   const handleCancelForm = () => {
     setShowForm(false);
     setEditingDebt(undefined);
@@ -166,6 +253,11 @@ function App() {
   const handleCancelFixedBillForm = () => {
     setShowFixedBillForm(false);
     setEditingFixedBill(undefined);
+  };
+
+  const handleCancelIncomeForm = () => {
+    setShowIncomeForm(false);
+    setEditingIncome(undefined);
   };
 
   return (
@@ -189,6 +281,14 @@ function App() {
               >
                 <Plus className="h-5 w-5" />
                 <span>Nova Conta</span>
+              </button>
+            ) : activeTab === 'incomes' ? (
+              <button
+                onClick={() => setShowIncomeForm(true)}
+                className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors shadow-lg"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Novo Recebimento</span>
               </button>
             ) : (
               <button
@@ -234,6 +334,16 @@ function App() {
           >
             Contas Fixas ({fixedBills.length})
           </button>
+          <button
+            onClick={() => setActiveTab('incomes')}
+            className={`flex-1 py-3 px-4 rounded-md font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'incomes'
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Recebimentos ({incomes.length})
+          </button>
         </div>
 
         {/* Conteúdo Principal */}
@@ -263,6 +373,20 @@ function App() {
           </>
         )}
 
+        {activeTab === 'incomes' && (
+          <>
+            <IncomeDashboard incomes={incomesWithStatus} summary={incomeSummary} />
+            <div className="mt-8">
+              <IncomeList
+                incomes={incomesWithStatus}
+                onEdit={handleEditIncome}
+                onDelete={handleDeleteIncome}
+                onToggleReceived={handleToggleIncomeReceived}
+              />
+            </div>
+          </>
+        )}
+
         {/* Modal do Formulário */}
         {showForm && (
           <DebtForm
@@ -278,6 +402,15 @@ function App() {
             bill={editingFixedBill}
             onSave={handleSaveFixedBill}
             onCancel={handleCancelFixedBillForm}
+          />
+        )}
+
+        {/* Modal do Formulário de Recebimentos */}
+        {showIncomeForm && (
+          <IncomeForm
+            income={editingIncome}
+            onSave={handleSaveIncome}
+            onCancel={handleCancelIncomeForm}
           />
         )}
       </div>
