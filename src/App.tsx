@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Debt, DebtSummary } from './types/debt';
 import { FixedBill, FixedBillSummary } from './types/fixedBill';
 import { Income, IncomeSummary } from './types/income';
+import { Project, ProjectSummary } from './types/project';
 import { Dashboard } from './components/Dashboard';
 import { DebtList } from './components/DebtList';
 import { DebtForm } from './components/DebtForm';
@@ -12,10 +13,20 @@ import { FixedBillForm } from './components/FixedBillForm';
 import { IncomeDashboard } from './components/IncomeDashboard';
 import { IncomeList } from './components/IncomeList';
 import { IncomeForm } from './components/IncomeForm';
+import { ProjectDashboard } from './components/ProjectDashboard';
+import { ProjectList } from './components/ProjectList';
+import { ProjectForm } from './components/ProjectForm';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { calculateDebtStatus } from './utils/debtCalculations';
 import { calculateFixedBillStatus } from './utils/fixedBillCalculations';
 import { calculateIncomeStatus } from './utils/incomeCalculations';
+import { 
+  calculateProjectTotalCosts, 
+  calculateProjectTotalRevenue, 
+  calculateProjectProfit,
+  calculateProjectPendingRevenue,
+  calculateProjectPendingCosts
+} from './utils/projectCalculations';
 import { processImportedData, createExportData, downloadJsonFile } from './utils/dataProcessing';
 import { Plus, Calculator, Download, Upload } from 'lucide-react';
 
@@ -23,14 +34,17 @@ function App() {
   const [debts, setDebts] = useLocalStorage<Debt[]>('debts', []);
   const [fixedBills, setFixedBills] = useLocalStorage<FixedBill[]>('fixedBills', []);
   const [incomes, setIncomes] = useLocalStorage<Income[]>('incomes', []);
+  const [projects, setProjects] = useLocalStorage<Project[]>('projects', []);
   const [showForm, setShowForm] = useState(false);
   const [showFixedBillForm, setShowFixedBillForm] = useState(false);
   const [showIncomeForm, setShowIncomeForm] = useState(false);
+  const [showProjectForm, setShowProjectForm] = useState(false);
   const [showNegotiateForm, setShowNegotiateForm] = useState(false);
   const [negotiatingDebt, setNegotiatingDebt] = useState<Debt | undefined>();
   const [editingFixedBill, setEditingFixedBill] = useState<FixedBill | undefined>();
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'debts' | 'fixedBills' | 'incomes'>('dashboard');
+  const [editingProject, setEditingProject] = useState<Project | undefined>();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'debts' | 'fixedBills' | 'incomes' | 'projects'>('dashboard');
 
   // Referência para o input de arquivo
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -118,6 +132,29 @@ function App() {
     };
   }, [incomes]);
 
+  // Calcular resumo dos projetos
+  const projectSummary: ProjectSummary = useMemo(() => {
+    const totalProjects = projects.length;
+    const activeProjects = projects.filter(p => p.status === 'em-andamento').length;
+    const completedProjects = projects.filter(p => p.status === 'concluido').length;
+    const totalRevenue = projects.reduce((sum, p) => sum + calculateProjectTotalRevenue(p), 0);
+    const totalCosts = projects.reduce((sum, p) => sum + calculateProjectTotalCosts(p), 0);
+    const totalProfit = totalRevenue - totalCosts;
+    const pendingRevenue = projects.reduce((sum, p) => sum + calculateProjectPendingRevenue(p), 0);
+    const pendingCosts = projects.reduce((sum, p) => sum + calculateProjectPendingCosts(p), 0);
+
+    return {
+      totalProjects,
+      activeProjects,
+      completedProjects,
+      totalRevenue,
+      totalCosts,
+      totalProfit,
+      pendingRevenue,
+      pendingCosts,
+    };
+  }, [projects]);
+
   // Atualizar status das dívidas
   const debtsWithStatus = useMemo(() => {
     return debts.map(debt => ({
@@ -199,6 +236,33 @@ function App() {
     setEditingIncome(undefined);
   };
 
+  const handleSaveProject = (projectData: Omit<Project, 'id' | 'costs' | 'revenues'>) => {
+    if (editingProject) {
+      // Editando projeto existente
+      setProjects(prev => prev.map(project => 
+        project.id === editingProject.id 
+          ? { 
+              ...projectData, 
+              id: editingProject.id,
+              costs: editingProject.costs,
+              revenues: editingProject.revenues
+            }
+          : project
+      ));
+    } else {
+      // Adicionando novo projeto
+      const newProject: Project = {
+        ...projectData,
+        id: Date.now().toString(),
+        costs: [],
+        revenues: [],
+      };
+      setProjects(prev => [...prev, newProject]);
+    }
+    setShowProjectForm(false);
+    setEditingProject(undefined);
+  };
+
   const handleOpenNegotiateForm = (debt: Debt) => {
     setNegotiatingDebt(debt);
     setShowNegotiateForm(true);
@@ -227,6 +291,16 @@ function App() {
     setShowIncomeForm(true);
   };
 
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setShowProjectForm(true);
+  };
+
+  const handleViewProjectDetails = (project: Project) => {
+    // TODO: Implementar modal de detalhes do projeto
+    console.log('Ver detalhes do projeto:', project);
+  };
+
   const handleDeleteDebt = (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta dívida?')) {
       setDebts(prev => prev.filter(debt => debt.id !== id));
@@ -242,6 +316,12 @@ function App() {
   const handleDeleteIncome = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este recebimento?')) {
       setIncomes(prev => prev.filter(income => income.id !== id));
+    }
+  };
+
+  const handleDeleteProject = (id: string) => {
+    if (confirm('Tem certeza que deseja excluir este projeto? Todos os custos e receitas associados serão perdidos.')) {
+      setProjects(prev => prev.filter(project => project.id !== id));
     }
   };
 
@@ -281,6 +361,11 @@ function App() {
   const handleCancelIncomeForm = () => {
     setShowIncomeForm(false);
     setEditingIncome(undefined);
+  };
+
+  const handleCancelProjectForm = () => {
+    setShowProjectForm(false);
+    setEditingProject(undefined);
   };
 
   const handleExportData = () => {
@@ -383,6 +468,14 @@ Deseja importar estes dados? Isso substituirá todos os dados atuais.
                 <Plus className="h-5 w-5" />
                 <span>Novo Recebimento</span>
               </button>
+            ) : activeTab === 'projects' ? (
+              <button
+                onClick={() => setShowProjectForm(true)}
+                className="flex items-center space-x-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors shadow-lg"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Novo Projeto</span>
+              </button>
             ) : (
               <button
                 onClick={() => setShowForm(true)}
@@ -446,6 +539,16 @@ Deseja importar estes dados? Isso substituirá todos os dados atuais.
           >
             Recebimentos ({incomes.length})
           </button>
+          <button
+            onClick={() => setActiveTab('projects')}
+            className={`flex-1 py-3 px-4 rounded-md font-medium transition-colors whitespace-nowrap ${
+              activeTab === 'projects'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Projetos ({projects.length})
+          </button>
         </div>
 
         {/* Conteúdo Principal */}
@@ -496,6 +599,20 @@ Deseja importar estes dados? Isso substituirá todos os dados atuais.
           </>
         )}
 
+        {activeTab === 'projects' && (
+          <>
+            <ProjectDashboard projects={projects} summary={projectSummary} />
+            <div className="mt-8">
+              <ProjectList
+                projects={projects}
+                onEdit={handleEditProject}
+                onDelete={handleDeleteProject}
+                onViewDetails={handleViewProjectDetails}
+              />
+            </div>
+          </>
+        )}
+
         {/* Modal do Formulário */}
         {showForm && (
           <DebtForm
@@ -528,6 +645,15 @@ Deseja importar estes dados? Isso substituirá todos os dados atuais.
             income={editingIncome}
             onSave={handleSaveIncome}
             onCancel={handleCancelIncomeForm}
+          />
+        )}
+
+        {/* Modal do Formulário de Projetos */}
+        {showProjectForm && (
+          <ProjectForm
+            project={editingProject}
+            onSave={handleSaveProject}
+            onCancel={handleCancelProjectForm}
           />
         )}
       </div>
