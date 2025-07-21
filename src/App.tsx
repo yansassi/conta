@@ -15,7 +15,8 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { calculateDebtStatus } from './utils/debtCalculations';
 import { calculateFixedBillStatus } from './utils/fixedBillCalculations';
 import { calculateIncomeStatus } from './utils/incomeCalculations';
-import { Plus, Calculator } from 'lucide-react';
+import { processImportedData, createExportData, downloadJsonFile } from './utils/dataProcessing';
+import { Plus, Calculator, Download, Upload } from 'lucide-react';
 
 function App() {
   const [debts, setDebts] = useLocalStorage<Debt[]>('debts', []);
@@ -28,6 +29,9 @@ function App() {
   const [editingFixedBill, setEditingFixedBill] = useState<FixedBill | undefined>();
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'debts' | 'fixedBills' | 'incomes'>('dashboard');
+
+  // Referência para o input de arquivo
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Calcular resumo das dívidas
   const summary: DebtSummary = useMemo(() => {
@@ -259,6 +263,60 @@ function App() {
     setEditingIncome(undefined);
   };
 
+  const handleExportData = () => {
+    try {
+      const exportData = createExportData(debts, fixedBills, incomes);
+      const filename = `controle-financeiro-${new Date().toISOString().split('T')[0]}.json`;
+      downloadJsonFile(exportData, filename);
+      alert('Dados exportados com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar dados:', error);
+      alert('Erro ao exportar dados. Tente novamente.');
+    }
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const jsonData = JSON.parse(content);
+        const processedData = processImportedData(jsonData);
+        
+        // Confirmar importação
+        const confirmMessage = `
+Dados encontrados:
+• ${processedData.debts.length} dívida(s)
+• ${processedData.fixedBills.length} conta(s) fixa(s)
+• ${processedData.incomes.length} recebimento(s)
+
+Deseja importar estes dados? Isso substituirá todos os dados atuais.
+        `.trim();
+        
+        if (confirm(confirmMessage)) {
+          setDebts(processedData.debts);
+          setFixedBills(processedData.fixedBills);
+          setIncomes(processedData.incomes);
+          alert('Dados importados com sucesso!');
+        }
+      } catch (error) {
+        console.error('Erro ao importar dados:', error);
+        alert('Erro ao importar dados. Verifique se o arquivo é válido.');
+      }
+    };
+    
+    reader.readAsText(file);
+    // Limpar o input para permitir reimportar o mesmo arquivo
+    event.target.value = '';
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
@@ -273,6 +331,22 @@ function App() {
           </div>
           
           <div className="flex space-x-3">
+            <button
+              onClick={handleImportClick}
+              className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors shadow-lg"
+            >
+              <Upload className="h-5 w-5" />
+              <span>Importar</span>
+            </button>
+            
+            <button
+              onClick={handleExportData}
+              className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg"
+            >
+              <Download className="h-5 w-5" />
+              <span>Exportar</span>
+            </button>
+            
             {activeTab === 'fixedBills' ? (
               <button
                 onClick={() => setShowFixedBillForm(true)}
@@ -300,6 +374,15 @@ function App() {
             )}
           </div>
         </div>
+
+        {/* Input oculto para importação de arquivos */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImportData}
+          style={{ display: 'none' }}
+        />
 
         {/* Navegação */}
         <div className="flex space-x-1 mb-8 bg-white p-1 rounded-lg shadow-md overflow-x-auto">
