@@ -1,15 +1,15 @@
 import React from 'react';
 import { Debt } from '../types/debt';
 import { formatCurrency, formatDate, getStatusColor, getCategoryIcon } from '../utils/debtCalculations';
-import { Edit, Trash2, Calendar, Percent } from 'lucide-react';
+import { Calculator, Trash2, Calendar, Percent } from 'lucide-react';
 
 interface DebtListProps {
   debts: Debt[];
-  onEdit: (debt: Debt) => void;
+  onNegotiate: (debt: Debt) => void;
   onDelete: (id: string) => void;
 }
 
-export const DebtList: React.FC<DebtListProps> = ({ debts, onEdit, onDelete }) => {
+export const DebtList: React.FC<DebtListProps> = ({ debts, onNegotiate, onDelete }) => {
   if (debts.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-8 text-center">
@@ -96,10 +96,11 @@ export const DebtList: React.FC<DebtListProps> = ({ debts, onEdit, onDelete }) =
             
             <div className="flex space-x-2 ml-4">
               <button
-                onClick={() => onEdit(debt)}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                onClick={() => onNegotiate(debt)}
+                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                title="Negociar condições"
               >
-                <Edit className="h-5 w-5" />
+                <Calculator className="h-5 w-5" />
               </button>
               <button
                 onClick={() => onDelete(debt.id)}

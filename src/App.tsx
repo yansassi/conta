@@ -5,6 +5,7 @@ import { Income, IncomeSummary } from './types/income';
 import { Dashboard } from './components/Dashboard';
 import { DebtList } from './components/DebtList';
 import { DebtForm } from './components/DebtForm';
+import { NegotiateDebtForm } from './components/NegotiateDebtForm';
 import { FixedBillDashboard } from './components/FixedBillDashboard';
 import { FixedBillList } from './components/FixedBillList';
 import { FixedBillForm } from './components/FixedBillForm';
@@ -25,7 +26,8 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [showFixedBillForm, setShowFixedBillForm] = useState(false);
   const [showIncomeForm, setShowIncomeForm] = useState(false);
-  const [editingDebt, setEditingDebt] = useState<Debt | undefined>();
+  const [showNegotiateForm, setShowNegotiateForm] = useState(false);
+  const [negotiatingDebt, setNegotiatingDebt] = useState<Debt | undefined>();
   const [editingFixedBill, setEditingFixedBill] = useState<FixedBill | undefined>();
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'debts' | 'fixedBills' | 'incomes'>('dashboard');
@@ -135,24 +137,26 @@ function App() {
     }));
   }, [fixedBills]);
 
-  const handleSaveDebt = (debtData: Omit<Debt, 'id'>) => {
-    if (editingDebt) {
-      // Editando dívida existente
-      setDebts(prev => prev.map(debt => 
-        debt.id === editingDebt.id 
-          ? { ...debtData, id: editingDebt.id }
-          : debt
-      ));
-    } else {
-      // Adicionando nova dívida
-      const newDebt: Debt = {
-        ...debtData,
-        id: Date.now().toString(),
-      };
-      setDebts(prev => [...prev, newDebt]);
-    }
+  const handleSaveDebt = (debtData: { name: string; category: string; totalAmount: number }) => {
+    // Adicionando nova dívida com valores padrão
+    const newDebt: Debt = {
+      id: Date.now().toString(),
+      name: debtData.name,
+      category: debtData.category as any,
+      totalAmount: debtData.totalAmount,
+      remainingAmount: debtData.totalAmount, // Inicialmente igual ao total
+      interestRate: 0, // Será definido na negociação
+      dueDate: new Date(), // Data atual como padrão
+      installments: {
+        total: 1, // Padrão: à vista
+        paid: 0,
+      },
+      minimumPayment: debtData.totalAmount, // Inicialmente o valor total
+      creditor: 'A definir', // Será preenchido na negociação
+      status: 'em-dia',
+    };
+    setDebts(prev => [...prev, newDebt]);
     setShowForm(false);
-    setEditingDebt(undefined);
   };
 
   const handleSaveFixedBill = (billData: Omit<FixedBill, 'id'>) => {
@@ -195,9 +199,22 @@ function App() {
     setEditingIncome(undefined);
   };
 
-  const handleEditDebt = (debt: Debt) => {
-    setEditingDebt(debt);
-    setShowForm(true);
+  const handleOpenNegotiateForm = (debt: Debt) => {
+    setNegotiatingDebt(debt);
+    setShowNegotiateForm(true);
+  };
+
+  const handleSaveNegotiatedDebt = (negotiatedDebt: Debt) => {
+    setDebts(prev => prev.map(debt => 
+      debt.id === negotiatedDebt.id ? negotiatedDebt : debt
+    ));
+    setShowNegotiateForm(false);
+    setNegotiatingDebt(undefined);
+  };
+
+  const handleCancelNegotiateForm = () => {
+    setShowNegotiateForm(false);
+    setNegotiatingDebt(undefined);
   };
 
   const handleEditFixedBill = (bill: FixedBill) => {
@@ -254,7 +271,6 @@ function App() {
 
   const handleCancelForm = () => {
     setShowForm(false);
-    setEditingDebt(undefined);
   };
 
   const handleCancelFixedBillForm = () => {
@@ -440,7 +456,7 @@ Deseja importar estes dados? Isso substituirá todos os dados atuais.
         {activeTab === 'debts' && (
           <DebtList
             debts={debtsWithStatus}
-            onEdit={handleEditDebt}
+            onNegotiate={handleOpenNegotiateForm}
             onDelete={handleDeleteDebt}
           />
         )}
@@ -476,9 +492,17 @@ Deseja importar estes dados? Isso substituirá todos os dados atuais.
         {/* Modal do Formulário */}
         {showForm && (
           <DebtForm
-            debt={editingDebt}
             onSave={handleSaveDebt}
             onCancel={handleCancelForm}
+          />
+        )}
+
+        {/* Modal do Formulário de Negociação */}
+        {showNegotiateForm && negotiatingDebt && (
+          <NegotiateDebtForm
+            debt={negotiatingDebt}
+            onSave={handleSaveNegotiatedDebt}
+            onCancel={handleCancelNegotiateForm}
           />
         )}
 
