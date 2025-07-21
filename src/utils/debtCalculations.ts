@@ -35,6 +35,29 @@ export const formatDate = (date: Date): string => {
   return new Intl.DateTimeFormat('pt-BR').format(date);
 };
 
+export const parseLocaleNumber = (input: string): number => {
+  if (!input || input.trim() === '') return 0;
+  
+  // Remove espaços e caracteres não numéricos exceto vírgula e ponto
+  let cleanInput = input.replace(/[^\d,.]/g, '');
+  
+  // Se tem vírgula, assumir formato brasileiro (1.234,56)
+  if (cleanInput.includes(',')) {
+    // Remover pontos (separadores de milhares) e trocar vírgula por ponto
+    cleanInput = cleanInput.replace(/\./g, '').replace(',', '.');
+  }
+  
+  const number = parseFloat(cleanInput);
+  return isNaN(number) ? 0 : number;
+};
+
+export const formatNumberToLocale = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
 export const getStatusColor = (status: string): string => {
   switch (status) {
     case 'em-dia': return 'text-green-600 bg-green-100';

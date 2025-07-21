@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { parseLocaleNumber } from '../utils/debtCalculations';
 import { X } from 'lucide-react';
 
 interface DebtFormProps {
@@ -19,7 +20,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ onSave, onCancel }) => {
     const debtData = {
       name: formData.name,
       category: formData.category,
-      totalAmount: parseFloat(formData.totalAmount),
+      totalAmount: parseLocaleNumber(formData.totalAmount),
     };
 
     onSave(debtData);
@@ -78,13 +79,12 @@ export const DebtForm: React.FC<DebtFormProps> = ({ onSave, onCancel }) => {
                 Valor Total (R$)
               </label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
                 required
                 value={formData.totalAmount}
                 onChange={(e) => setFormData({ ...formData, totalAmount: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0,00"
+                placeholder="1.090,48"
               />
             </div>
           </div>

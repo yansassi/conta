@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Debt } from '../types/debt';
+import { parseLocaleNumber, formatNumberToLocale } from '../utils/debtCalculations';
 import { X } from 'lucide-react';
 
 interface NegotiateDebtFormProps {
@@ -23,14 +24,14 @@ export const NegotiateDebtForm: React.FC<NegotiateDebtFormProps> = ({ debt, onSa
   useEffect(() => {
     if (debt) {
       setFormData({
-        remainingAmount: debt.remainingAmount.toString(),
-        interestRate: debt.interestRate.toString(),
+        remainingAmount: formatNumberToLocale(debt.remainingAmount),
+        interestRate: formatNumberToLocale(debt.interestRate),
         dueDate: debt.dueDate.toISOString().split('T')[0],
         totalInstallments: debt.installments.total.toString(),
         paidInstallments: debt.installments.paid.toString(),
-        minimumPayment: debt.minimumPayment.toString(),
+        minimumPayment: formatNumberToLocale(debt.minimumPayment),
         creditor: debt.creditor,
-        downPayment: '0',
+        downPayment: '0,00',
       });
     }
   }, [debt]);
@@ -38,20 +39,20 @@ export const NegotiateDebtForm: React.FC<NegotiateDebtFormProps> = ({ debt, onSa
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const downPayment = parseFloat(formData.downPayment) || 0;
-    const remainingAmount = parseFloat(formData.remainingAmount) || debt.totalAmount;
+    const downPayment = parseLocaleNumber(formData.downPayment) || 0;
+    const remainingAmount = parseLocaleNumber(formData.remainingAmount) || debt.totalAmount;
     const finalRemainingAmount = Math.max(0, remainingAmount - downPayment);
     
     const negotiatedDebt: Debt = {
       ...debt,
       remainingAmount: finalRemainingAmount,
-      interestRate: parseFloat(formData.interestRate),
+      interestRate: parseLocaleNumber(formData.interestRate),
       dueDate: new Date(formData.dueDate),
       installments: {
         total: parseInt(formData.totalInstallments),
         paid: parseInt(formData.paidInstallments),
       },
-      minimumPayment: parseFloat(formData.minimumPayment),
+      minimumPayment: parseLocaleNumber(formData.minimumPayment),
       creditor: formData.creditor,
       status: 'em-dia', // Será recalculado automaticamente
     };
@@ -89,12 +90,11 @@ export const NegotiateDebtForm: React.FC<NegotiateDebtFormProps> = ({ debt, onSa
                 Entrada/Sinal (R$)
               </label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
                 value={formData.downPayment}
                 onChange={(e) => setFormData({ ...formData, downPayment: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0,00"
+                placeholder="500,00"
               />
               <p className="text-xs text-gray-500 mt-1">Valor pago à vista (opcional)</p>
             </div>
@@ -104,13 +104,12 @@ export const NegotiateDebtForm: React.FC<NegotiateDebtFormProps> = ({ debt, onSa
                 Valor a Financiar (R$)
               </label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
                 required
                 value={formData.remainingAmount}
                 onChange={(e) => setFormData({ ...formData, remainingAmount: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0,00"
+                placeholder="10.000,00"
               />
             </div>
 
@@ -119,13 +118,12 @@ export const NegotiateDebtForm: React.FC<NegotiateDebtFormProps> = ({ debt, onSa
                 Taxa de Juros (% ao ano)
               </label>
               <input
-                type="number"
-                step="0.1"
+                type="text"
                 required
                 value={formData.interestRate}
                 onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0.0"
+                placeholder="12,50"
               />
             </div>
 
@@ -175,13 +173,12 @@ export const NegotiateDebtForm: React.FC<NegotiateDebtFormProps> = ({ debt, onSa
                 Pagamento Mínimo (R$)
               </label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
                 required
                 value={formData.minimumPayment}
                 onChange={(e) => setFormData({ ...formData, minimumPayment: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0,00"
+                placeholder="250,00"
               />
             </div>
 

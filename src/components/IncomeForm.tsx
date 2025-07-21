@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Income } from '../types/income';
+import { parseLocaleNumber, formatNumberToLocale } from '../utils/debtCalculations';
 import { X } from 'lucide-react';
 
 interface IncomeFormProps {
@@ -27,7 +28,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ income, onSave, onCancel
       setFormData({
         name: income.name,
         category: income.category,
-        amount: income.amount.toString(),
+        amount: formatNumberToLocale(income.amount),
         frequency: income.frequency,
         receivedDate: income.receivedDate.toISOString().split('T')[0],
         expectedDate: income.expectedDate ? income.expectedDate.toISOString().split('T')[0] : '',
@@ -45,7 +46,7 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ income, onSave, onCancel
     const newIncome: Omit<Income, 'id'> = {
       name: formData.name,
       category: formData.category,
-      amount: parseFloat(formData.amount),
+      amount: parseLocaleNumber(formData.amount),
       frequency: formData.frequency,
       receivedDate: new Date(formData.receivedDate),
       expectedDate: formData.expectedDate ? new Date(formData.expectedDate) : undefined,
@@ -113,13 +114,12 @@ export const IncomeForm: React.FC<IncomeFormProps> = ({ income, onSave, onCancel
                 Valor (R$)
               </label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
                 required
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0,00"
+                placeholder="3.500,00"
               />
             </div>
 
